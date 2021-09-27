@@ -36,7 +36,12 @@ SVI_County = SVI %>%
                         C_POV = sum(E_POV),
                         C_UNEMP = sum(E_UNEMP),
                         C_PCI = round(sum(E_PCI * E_TOTPOP, na.rm = TRUE) / sum(E_TOTPOP, na.rm = TRUE)),
-                        C_NOHSDP = sum(E_NOHSDP)
+                        C_NOHSDP = sum(E_NOHSDP),
+                        C_MUNIT = sum(E_MUNIT),
+                        C_MOBILE = sum(E_MOBILE),
+                        C_CROWD = sum(E_CROWD),
+                        C_NOVEH = sum(E_NOVEH),
+                        C_GROUPQ = sum(E_GROUPQ)
               )
 SVI_County
 ```
