@@ -1,0 +1,48 @@
+---
+title: "County Roll-up"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load Libraries
+```{r}
+library(dplyr)
+```
+
+# Load Data
+```{r}
+path = "C:/Users/taywo/Documents/Git Repos/CDC2021/datasets/Social Science/"
+filename = "xn--CDCs_Social_Vulnerability_Index_(SVI)__2014_overall_SVI,_census_tract_level_-_Wake_County-7470duo.csv"
+SVI = read.csv(paste(path,filename,sep=""))
+```
+
+# Clean Data Prior to Aggregation
+```{r}
+SVI$E_PCI[which(SVI$E_PCI == -999)] = NA
+```
+
+# Aggregate to County Level
+```{r}
+SVI_County = SVI %>%
+              rowwise() %>% 
+              group_by(STCNTY, STATE, COUNTY) %>% 
+              summarise(C_TOTPOP = sum(E_TOTPOP),
+                        C_AREA_SQMI = sum(AREA_SQMI),
+                        C_HU = sum(E_HU),
+                        C_HH = sum(E_HH),
+                        C_POV = sum(E_POV),
+                        C_UNEMP = sum(E_UNEMP),
+                        C_PCI = round(sum(E_PCI * E_TOTPOP, na.rm = TRUE) / sum(E_TOTPOP, na.rm = TRUE)),
+                        C_NOHSDP = sum(E_NOHSDP),
+                        C_MUNIT = sum(E_MUNIT),
+                        C_MOBILE = sum(E_MOBILE),
+                        C_CROWD = sum(E_CROWD),
+                        C_NOVEH = sum(E_NOVEH),
+                        C_GROUPQ = sum(E_GROUPQ)
+              )
+SVI_County
+```
+
