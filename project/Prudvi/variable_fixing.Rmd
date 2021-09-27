@@ -1,0 +1,31 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+
+```{r}
+
+library(tidyverse)
+
+```
+
+
+```{r}
+
+SVI_2014 = read.csv('G:\\My Drive\\School\\CDC\\xn--CDCs_Social_Vulnerability_Index_(SVI)__2014_overall_SVI,_census_tract_level_-_Wake_County-7470duo.csv')
+
+```
+
+```{r}
+
+test = SVI_2014 %>% 
+  group_by(STATE, COUNTY) %>% 
+  summarise(COUNTY_E_AGE17 = sum(E_AGE17),
+            COUNTY_E_DISABL = sum(E_DISABL),
+            COUNTY_E_SNGPNT = sum(E_SNGPNT),
+            COUNTY_E_MINRTY = sum(E_MINRTY))
+
+```
+
