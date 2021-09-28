@@ -76,3 +76,8 @@ SVI_County = SVI %>%
 SVI_County
 ```
 
+```{r}
+filename = "SVI_County.csv"
+write.csv(SVI_County, )
+```
+
