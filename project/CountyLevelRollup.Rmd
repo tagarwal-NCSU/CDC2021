@@ -15,8 +15,34 @@ library(dplyr)
 # Load Data
 ```{r}
 path = "C:/Users/taywo/Documents/Git Repos/CDC2021/datasets/Social Science/"
-filename = "xn--CDCs_Social_Vulnerability_Index_(SVI)__2014_overall_SVI,_census_tract_level_-_Wake_County-7470duo.csv"
-SVI = read.csv(paste(path,filename,sep=""))
+years = c(2014, 2016, 2018)
+filenames = c("xn--CDCs_Social_Vulnerability_Index_(SVI)__2014_overall_SVI,_census_tract_level_-_Wake_County-7470duo.csv",
+              "SVI2016_US.csv",
+              "SVI2018_US.csv")
+
+#E_DISABL is missing from 2010, and some columns have different names
+columns_2010 = c("YEAR", "STCOFIPS", "STATE_NAME", "COUNTY", "CENSUSAREA", "E_TOTPOP", 
+            "E_HU", "HH", "E_POV", "E_UNEMP", "E_PCI", "E_NOHSDIP", "AGE65", 
+            "AGE17", "SNGPRNT", "MINORITY", "E_LIMENG", "E_MUNIT", 
+            "E_MOBILE", "E_CROWD", "E_NOVEH", "GROUPQ")
+
+columns = c("YEAR", "STCNTY", "STATE", "COUNTY", "AREA_SQMI", 'E_TOTPOP', 
+            'E_HU', 'E_HH', 'E_POV', 'E_UNEMP', 'E_PCI', 'E_NOHSDP', 'E_AGE65', 
+            'E_AGE17', 'E_DISABL', 'E_SNGPNT', 'E_MINRTY', 'E_LIMENG', 'E_MUNIT', 
+            'E_MOBILE', 'E_CROWD', 'E_NOVEH', 'E_GROUPQ')
+
+for (i in 1:length(years)){
+  year = years[i]
+  filename = filenames[i]
+  SVI_new = read.csv(paste(path,filename,sep=""))
+  SVI_new$YEAR = year
+  if (i == 1){
+    SVI = SVI_new[columns]
+  } else {
+    SVI = rbind(SVI, SVI_new[columns])
+  }
+}
+SVI
 ```
 
 # Clean Data Prior to Aggregation
@@ -28,7 +54,7 @@ SVI$E_PCI[which(SVI$E_PCI == -999)] = NA
 ```{r}
 SVI_County = SVI %>%
               rowwise() %>% 
-              group_by(STCNTY, STATE, COUNTY) %>% 
+              group_by(YEAR, STCNTY, STATE, COUNTY) %>% 
               summarise(C_TOTPOP = sum(E_TOTPOP),
                         C_AREA_SQMI = sum(AREA_SQMI),
                         C_HU = sum(E_HU),
@@ -42,10 +68,10 @@ SVI_County = SVI %>%
                         C_CROWD = sum(E_CROWD),
                         C_NOVEH = sum(E_NOVEH),
                         C_GROUPQ = sum(E_GROUPQ),
-                        COUNTY_E_AGE17 = sum(E_AGE17),
-                        COUNTY_E_DISABL = sum(E_DISABL),
-                        COUNTY_E_SNGPNT = sum(E_SNGPNT),
-                        COUNTY_E_MINRTY = sum(E_MINRTY)
+                        C_AGE17 = sum(E_AGE17),
+                        C_DISABL = sum(E_DISABL),
+                        C_SNGPNT = sum(E_SNGPNT),
+                        C_MINRTY = sum(E_MINRTY)
               )
 SVI_County
 ```
