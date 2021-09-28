@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # Load Libraries
 ```{r}
 library(dplyr)
+library(stringr)
 ```
 
 # Load Data
@@ -47,8 +48,8 @@ SVI
 
 # Clean Data Prior to Aggregation
 ```{r}
-SVI$STATE = toupper(SVI$STATE)
-SVI$COUNTY = toupper(SVI$COUNTY)
+SVI$STATE = str_trim(toupper(SVI$STATE))
+SVI$COUNTY = str_trim(toupper(SVI$COUNTY))
 
 SVI$E_PCI[which(SVI$E_PCI == -999)] = NA
 SVI$E_POV[which(SVI$E_POV == -999)] = NA
@@ -76,10 +77,17 @@ SVI_County = SVI %>%
                         C_AGE17 = sum(E_AGE17),
                         C_DISABL = sum(E_DISABL),
                         C_SNGPNT = sum(E_SNGPNT),
-                        C_MINRTY = sum(E_MINRTY)
+                        C_MINRTY = sum(E_MINRTY),
+                        C_LIMENG = sum(E_LIMENG)
               )
 SVI_County
 ```
+# Compute SVI
+```{r}
+
+```
+
+
 
 ```{r}
 filename = "SVI_County.csv"
