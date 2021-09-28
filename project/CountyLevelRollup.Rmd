@@ -41,7 +41,11 @@ SVI_County = SVI %>%
                         C_MOBILE = sum(E_MOBILE),
                         C_CROWD = sum(E_CROWD),
                         C_NOVEH = sum(E_NOVEH),
-                        C_GROUPQ = sum(E_GROUPQ)
+                        C_GROUPQ = sum(E_GROUPQ),
+                        COUNTY_E_AGE17 = sum(E_AGE17),
+                        COUNTY_E_DISABL = sum(E_DISABL),
+                        COUNTY_E_SNGPNT = sum(E_SNGPNT),
+                        COUNTY_E_MINRTY = sum(E_MINRTY)
               )
 SVI_County
 ```
