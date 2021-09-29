@@ -57,14 +57,19 @@ SVI$E_POV[which(SVI$E_POV == -999)] = NA
 SVI$E_UNEMP[which(SVI$E_UNEMP == -999)] = NA
 ```
 
+```{r}
+SVI[which(SVI$COUNTY == "MARICOPA" & SVI$E_LIMENG == 0),]
+```
+
+
 # Add necessary populations and housing units
 ```{r}
 SVI = SVI %>%
-        mutate(E_AGE25 = round(E_NOHSDP / (EP_NOHSDP/100)), #Number of people 25+
-               E_AGE16 = round(E_UNEMP / (EP_UNEMP/100)), #Number of people 16+
-               E_AGE5 = round(E_LIMENG / (EP_LIMENG/100)), #Number of people 5+
-               E_NOINST = round(E_DISABL / (EP_DISABL/100)), #Number of people not in an institution
-               E_OCCHU = round(E_CROWD / (EP_CROWD/100))) #Number of occupied housing units
+        mutate(E_AGE25 = ifelse(is.na(round(E_NOHSDP / (EP_NOHSDP/100))), 0, round(E_NOHSDP / (EP_NOHSDP/100))), #Number of people 25+
+               E_AGE16 = ifelse(is.na(round(E_UNEMP / (EP_UNEMP/100))), 0,  round(E_UNEMP / (EP_UNEMP/100))), #Number of people 16+
+               E_AGE5 = ifelse(is.na(round(E_LIMENG / (EP_LIMENG/100))), 0, round(E_LIMENG / (EP_LIMENG/100))), #Number of people 5+
+               E_NOINST = ifelse(is.na(round(E_DISABL / (EP_DISABL/100))), 0, round(E_DISABL / (EP_DISABL/100))), #Number of people not in an institution
+               E_OCCHU = ifelse(is.na(round(E_CROWD / (EP_CROWD/100))), 0, round(E_CROWD / (EP_CROWD/100))))  #Number of occupied housing units
 ```
 
 
@@ -117,7 +122,7 @@ SVI_County = SVI_County %>%
                        CEP_DISABL = CE_DISABL / CE_NOINST,
                        CEP_SNGPNT = CE_SNGPNT / CE_HH,
                        CEP_MINRTY = CE_MINRTY / CE_TOTPOP,
-                       CEP_LIMENG = CE_LIMENG / CE_AGE5
+                       CEP_LIMENG = ifelse(is.na(CE_LIMENG / CE_AGE5), 0, CE_LIMENG / CE_AGE5)
                 )
 ```
 
@@ -126,7 +131,13 @@ SVI_County
 ```
 
 ```{r}
-
+SVI_County = SVI_County %>%
+              ungroup() %>% 
+              mutate(CEPL_MINRTY = percent_rank(CEP_MINRTY),
+                     CEPL_LIMENG = percent_rank(CEP_LIMENG),
+                     CSPL_THEME3 = percent_rank(CEP_MINRTY) + percent_rank(CEP_LIMENG),
+                     CRPL_THEME3 = percent_rank(percent_rank(CEP_MINRTY) + percent_rank(CEP_LIMENG)))
+SVI_County
 ```
 
 
