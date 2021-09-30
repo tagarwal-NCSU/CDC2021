@@ -33,17 +33,21 @@ columns = c("YEAR", "STATE", "COUNTY", "AREA_SQMI", 'E_TOTPOP',
             'E_MOBILE', 'E_CROWD', 'E_NOVEH', 'E_GROUPQ',
             'EP_NOHSDP', 'EP_UNEMP', 'EP_LIMENG', 'EP_DISABL', 'EP_CROWD', 'EP_NOVEH')
 
-for (i in 1:length(years)){
-  year = years[i]
-  filename = filenames[i]
-  SVI_new = read.csv(paste(path,filename,sep=""))
-  SVI_new$YEAR = year
-  if (i == 1){
-    SVI = SVI_new[columns]
-  } else {
-    SVI = rbind(SVI, SVI_new[columns])
-  }
-}
+# for (i in 1:length(years)){
+#   year = years[i]
+#   filename = filenames[i]
+#   SVI_new = read.csv(paste(path,filename,sep=""))
+#   SVI_new$YEAR = year
+#   if (i == 1){
+#     SVI = SVI_new[columns]
+#   } else {
+#     SVI = rbind(SVI, SVI_new[columns])
+#   }
+# }
+filename = "xn--CDCs_Social_Vulnerability_Index_(SVI)__2014_overall_SVI,_census_tract_level_-_Wake_County-7470duo.csv"
+SVI_new = read.csv(paste(path,filename,sep=""))
+SVI_new$YEAR = 2014
+SVI = SVI_new[columns]
 SVI
 ```
 
@@ -114,7 +118,7 @@ SVI_County = SVI_County %>%
                        CEP_NOHSDP = CE_NOHSDP / CE_AGE25,
                        CEP_MUNIT  = CE_MUNIT / CE_HU,
                        CEP_MOBLIE = CE_MOBILE / CE_HH, #This is a guess
-                       CEP_CROWD  = CE_CROWD / CE_OCCHU,
+                       CEP_CROWD  = ifelse(is.na(CE_CROWD / CE_OCCHU), 0, CE_CROWD / CE_OCCHU),
                        CEP_NOVEH  = CE_NOVEH / CE_HH, #This is a guess
                        CEP_GROUPQ = CE_GROUPQ / CE_TOTPOP,
                        CEP_AGE17  = CE_AGE17 / CE_TOTPOP,
@@ -133,10 +137,34 @@ SVI_County
 ```{r}
 SVI_County = SVI_County %>%
               ungroup() %>% 
-              mutate(CEPL_MINRTY = percent_rank(CEP_MINRTY),
+              mutate(CEPL_POV    = percent_rank(CEP_POV),
+                     CEPL_UNEMP  = percent_rank(CEP_UNEMP),
+                     CEPL_PCI    = percent_rank(CEP_PCI),
+                     CEPL_NOHSDP = percent_rank(CEP_NOHSDP),
+                     CSPL_THEME1 = percent_rank(CEP_POV) + percent_rank(CEP_UNEMP) + percent_rank(CEP_PCI) + percent_rank(CEP_NOHSDP),
+                     CRPL_THEME1 = percent_rank(percent_rank(CEP_POV) + percent_rank(CEP_UNEMP) + percent_rank(CEP_PCI) + percent_rank(CEP_NOHSDP)),
+                     CEPL_AGE65  = percent_rank(CEP_AGE65),
+                     CEPL_AGE17  = percent_rank(CEP_AGE17),
+                     CEPL_DISABL = percent_rank(CEP_DISABL),
+                     CEPL_SNGPNT = percent_rank(CEP_SNGPNT),
+                     CSPL_THEME2 = percent_rank(CEP_AGE65) + percent_rank(CEP_AGE17) + percent_rank(CEP_DISABL) + percent_rank(CEP_SNGPNT),
+                     CRPL_THEME2 = percent_rank(percent_rank(CEP_AGE65) + percent_rank(CEP_AGE17) + percent_rank(CEP_DISABL) + percent_rank(CEP_SNGPNT)),
+                     CEPL_MINRTY = percent_rank(CEP_MINRTY),
                      CEPL_LIMENG = percent_rank(CEP_LIMENG),
                      CSPL_THEME3 = percent_rank(CEP_MINRTY) + percent_rank(CEP_LIMENG),
-                     CRPL_THEME3 = percent_rank(percent_rank(CEP_MINRTY) + percent_rank(CEP_LIMENG)))
+                     CRPL_THEME3 = percent_rank(percent_rank(CEP_MINRTY) + percent_rank(CEP_LIMENG)),
+                     CEPL_MUNIT  = percent_rank(CEP_MUNIT),
+                     CEPL_MOBILE = percent_rank(CEP_MOBLIE),
+                     CEPL_CROWD  = percent_rank(CEP_CROWD),
+                     CEPL_NOVEH  = percent_rank(CEP_NOVEH),
+                     CEPL_GROUPQ = percent_rank(CEP_GROUPQ),
+                     CSPL_THEME4 = percent_rank(CEP_MUNIT) + percent_rank(CEP_MOBLIE) + percent_rank(CEP_CROWD) + percent_rank(CEP_NOVEH) + percent_rank(CEP_GROUPQ),
+                     CRPL_THEME4 = percent_rank(percent_rank(CEP_MUNIT) + percent_rank(CEP_MOBLIE) + percent_rank(CEP_CROWD) + percent_rank(CEP_NOVEH) + percent_rank(CEP_GROUPQ)))
+
+SVI_County = SVI_County %>% 
+              mutate(CSPL_THEMES = CRPL_THEME1 + CRPL_THEME2 + CRPL_THEME3 + CRPL_THEME4,
+                     CRPL_THEMES = percent_rank(CRPL_THEME1 + CRPL_THEME2 + CRPL_THEME3 + CRPL_THEME4))
+
 SVI_County
 ```
 
