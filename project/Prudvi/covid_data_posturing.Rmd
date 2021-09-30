@@ -1,0 +1,59 @@
+## Posturing covid deaths, infection and vaccination data for joining with SVI dataset
+
+
+Load in the required libraries
+
+```{r}
+
+library(tidyverse)
+library(lubridate)
+
+```
+
+Load in required files
+
+```{r}
+
+covid_deaths = read.csv("G:\\My Drive\\School\\CDC\\CDC2021\\datasets\\Social Science\\covid_deaths_usafacts.csv")
+covid_vaccine = read.csv("G:\\My Drive\\School\\CDC\\CDC2021\\datasets\\Social Science\\covid_deaths_usafacts.csv")
+covid_infection = read.csv("G:\\My Drive\\School\\CDC\\CDC2021\\datasets\\Social Science\\covid_confirmed_usafacts.csv")
+
+```
+
+Convert county names so that they match up with SVI dataset
+
+```{r}
+
+change_county_name = function(county_name){
+  new_county_name = ifelse(str_detect(county_name, "County") == TRUE || str_detect(county_name, "county") == TRUE, substr(county_name, 1, nchar(county_name)-7), county_name)
+  return(new_county_name)
+}
+
+change_county_name = Vectorize(change_county_name)
+
+covid_deaths$County.Name = change_count_name(covid_deaths$County.Name)
+covid_infection$County.Name = change_count_name(covid_infection$County.Name)
+covid_vaccine$County.Name = change_count_name(covid_vaccine$County.Name)
+
+```
+
+Create tall dataframes
+
+```{r}
+
+covid_deaths_tall = gather(covid_deaths, date, deaths, colnames(covid_deaths)[5]:colnames(covid_deaths)[length(colnames(covid_deaths))], factor_key=F)
+covid_vaccine_tall = gather(covid_vaccine, date, total_vaccines, colnames(covid_vaccine)[5]:colnames(covid_vaccine)[length(colnames(covid_vaccine))], factor_key=F)
+covid_infection_tall = gather(covid_infection, date, total_infection, colnames(covid_infection)[5]:colnames(covid_infection)[length(colnames(covid_infection))], factor_key=F)
+
+```
+
+Remove the "X" that appears at the beginning of every date and convert it into a date object
+
+```{r}
+
+covid_deaths_tall$date = ymd(str_remove_all(substr(covid_deaths_tall$date, 2, nchar(covid_deaths_tall$date)),"\\."))
+covid_vaccine_tall$date = ymd(str_remove_all(substr(covid_vaccine_tall$date, 2, nchar(covid_vaccine_tall$date)), "\\."))
+covid_infection_tall$date = ymd(str_remove_all(substr(covid_infection_tall$date, 2, nchar(covid_infection_tall$date)), "\\."))
+
+```
+
