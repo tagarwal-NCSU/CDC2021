@@ -27,7 +27,7 @@ columns_2010 = c("YEAR", "STATE_NAME", "COUNTY", "CENSUSAREA", "E_TOTPOP",
             "AGE17", "SNGPRNT", "MINORITY", "E_LIMENG", "E_MUNIT", 
             "E_MOBILE", "E_CROWD", "E_NOVEH", "GROUPQ")
 
-columns = c("YEAR", "STATE", "COUNTY", "AREA_SQMI", 'E_TOTPOP', 
+columns = c("YEAR", "STATE", "COUNTY", "STCNTY", "AREA_SQMI", 'E_TOTPOP', 
             'E_HU', 'E_HH', 'E_POV', 'E_UNEMP', 'E_PCI', 'E_NOHSDP', 'E_AGE65', 
             'E_AGE17', 'E_DISABL', 'E_SNGPNT', 'E_MINRTY', 'E_LIMENG', 'E_MUNIT', 
             'E_MOBILE', 'E_CROWD', 'E_NOVEH', 'E_GROUPQ',
@@ -61,10 +61,6 @@ SVI$E_POV[which(SVI$E_POV == -999)] = NA
 SVI$E_UNEMP[which(SVI$E_UNEMP == -999)] = NA
 ```
 
-```{r}
-SVI[which(SVI$COUNTY == "MARICOPA" & SVI$E_LIMENG == 0),]
-```
-
 
 # Add necessary populations and housing units
 ```{r}
@@ -81,7 +77,7 @@ SVI = SVI %>%
 ```{r}
 SVI_County = SVI %>%
               rowwise() %>% 
-              group_by(YEAR, STATE, COUNTY) %>% 
+              group_by(YEAR, STCNTY, STATE, COUNTY) %>% 
               summarise(CE_TOTPOP    = sum(E_TOTPOP),
                         CE_AREA_SQMI = sum(AREA_SQMI),
                         CE_HU        = sum(E_HU),
@@ -174,4 +170,14 @@ SVI_County
 filename = "SVI_County.csv"
 write.csv(SVI_County, paste(path,filename,sep=""))
 ```
+
+```{r}
+lookup = SVI_County %>%
+          select(STCNTY,
+                 STATE,
+                 COUNTY)
+filename = "FIPSCountyXWalk.csv"
+write.csv(lookup, paste(path,filename,sep=""))
+```
+
 
