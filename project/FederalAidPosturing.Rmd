@@ -10,6 +10,25 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 path = "../datasets/Social Science/"
 filename = "COVID Relief Funds by County.csv"
-SVI_raw = read.csv(paste(path,filename,sep=""))
+COVID_relief = read.csv(paste(path,filename,sep=""))
+COVID_relief$County.Name = toupper(COVID_relief$County.Name)
+
+filename = "SVI_County.csv"
+SVI = read.csv(paste(path,filename,sep=""))
+SVI
 ```
+
+```{r}
+SVI_NC = SVI %>% 
+          filter(STATE == "NORTH CAROLINA") %>% 
+          inner_join(COVID_relief, by = c("COUNTY" = "County.Name")) %>% 
+          select(STATE, COUNTY, CE_TOTPOP, CRPL_THEMES, Running.total)
+```
+
+```{r}
+filename = "FedAid_County.csv"
+write.csv(SVI_NC, paste(path,filename,sep=""))
+```
+
+
 
