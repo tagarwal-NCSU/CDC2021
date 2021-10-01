@@ -59,6 +59,13 @@ covid_infection_tall$date = ymd(substring(covid_infection_tall$date, 2))
 ```
 
 ```{r}
+covid_vaccine_tall = read.csv("C:\\Users\\taywo\\Documents\\Git Repos\\CDC2021\\datasets\\Social Science\\vaccine_data_by_county.csv")
+covid_vaccine_tall$date = mdy(covid_vaccine_tall$Date)
+covid_vaccine_tall$countyFIPS = as.numeric(covid_vaccine_tall$FIPS)
+covid_vaccine_tall$total_vaccines = covid_vaccine_tall$Administered_Dose1_Recip
+```
+
+```{r}
 
 new_tall = covid_infection_tall %>%
             filter(countyFIPS != 0) %>% 
@@ -73,7 +80,9 @@ final = new_tall %>%
                  deaths) %>% 
           gather(type, value, total_infection:deaths)
 
-final
+final %>%
+  filter(type == "total_vaccines",
+         date > "2020-07-01")
 ```
 
 ```{r}

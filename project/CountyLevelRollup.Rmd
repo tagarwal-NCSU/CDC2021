@@ -135,7 +135,7 @@ SVI_County = SVI_County %>%
               ungroup() %>% 
               mutate(CEPL_POV    = percent_rank(CEP_POV),
                      CEPL_UNEMP  = percent_rank(CEP_UNEMP),
-                     CEPL_PCI    = percent_rank(CEP_PCI),
+                     CEPL_PCI    = 1-percent_rank(CEP_PCI),
                      CEPL_NOHSDP = percent_rank(CEP_NOHSDP),
                      CSPL_THEME1 = percent_rank(CEP_POV) + percent_rank(CEP_UNEMP) + percent_rank(CEP_PCI) + percent_rank(CEP_NOHSDP),
                      CRPL_THEME1 = percent_rank(percent_rank(CEP_POV) + percent_rank(CEP_UNEMP) + percent_rank(CEP_PCI) + percent_rank(CEP_NOHSDP)),
