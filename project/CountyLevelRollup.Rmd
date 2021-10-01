@@ -15,39 +15,16 @@ library(stringr)
 
 # Load Data
 ```{r}
-path = "C:/Users/taywo/Documents/Git Repos/CDC2021/datasets/Social Science/"
-years = c(2014, 2016, 2018)
-filenames = c("xn--CDCs_Social_Vulnerability_Index_(SVI)__2014_overall_SVI,_census_tract_level_-_Wake_County-7470duo.csv",
-              "SVI2016_US.csv",
-              "SVI2018_US.csv")
-
-#E_DISABL is missing from 2010, and some columns have different names
-columns_2010 = c("YEAR", "STATE_NAME", "COUNTY", "CENSUSAREA", "E_TOTPOP", 
-            "E_HU", "HH", "E_POV", "E_UNEMP", "E_PCI", "E_NOHSDIP", "AGE65", 
-            "AGE17", "SNGPRNT", "MINORITY", "E_LIMENG", "E_MUNIT", 
-            "E_MOBILE", "E_CROWD", "E_NOVEH", "GROUPQ")
-
-columns = c("YEAR", "STATE", "COUNTY", "STCNTY", "AREA_SQMI", 'E_TOTPOP', 
+path = "../datasets/Social Science/"
+columns = c("STATE", "COUNTY", "STCNTY", "AREA_SQMI", 'E_TOTPOP', 
             'E_HU', 'E_HH', 'E_POV', 'E_UNEMP', 'E_PCI', 'E_NOHSDP', 'E_AGE65', 
             'E_AGE17', 'E_DISABL', 'E_SNGPNT', 'E_MINRTY', 'E_LIMENG', 'E_MUNIT', 
             'E_MOBILE', 'E_CROWD', 'E_NOVEH', 'E_GROUPQ',
             'EP_NOHSDP', 'EP_UNEMP', 'EP_LIMENG', 'EP_DISABL', 'EP_CROWD', 'EP_NOVEH')
 
-# for (i in 1:length(years)){
-#   year = years[i]
-#   filename = filenames[i]
-#   SVI_new = read.csv(paste(path,filename,sep=""))
-#   SVI_new$YEAR = year
-#   if (i == 1){
-#     SVI = SVI_new[columns]
-#   } else {
-#     SVI = rbind(SVI, SVI_new[columns])
-#   }
-# }
 filename = "xn--CDCs_Social_Vulnerability_Index_(SVI)__2014_overall_SVI,_census_tract_level_-_Wake_County-7470duo.csv"
-SVI_new = read.csv(paste(path,filename,sep=""))
-SVI_new$YEAR = 2014
-SVI = SVI_new[columns]
+SVI_raw = read.csv(paste(path,filename,sep=""))
+SVI = SVI_raw[columns]
 SVI
 ```
 
@@ -56,20 +33,27 @@ SVI
 SVI$STATE = str_trim(toupper(SVI$STATE))
 SVI$COUNTY = str_trim(toupper(SVI$COUNTY))
 
-SVI$E_PCI[which(SVI$E_PCI == -999)] = NA
-SVI$E_POV[which(SVI$E_POV == -999)] = NA
-SVI$E_UNEMP[which(SVI$E_UNEMP == -999)] = NA
+for (colname in colnames(SVI)){
+  SVI[which(SVI[colname] == -999), colname] = NA
+}
+
+# SVI$E_PCI[which(SVI$E_PCI == -999)] = NA
+# SVI$E_POV[which(SVI$E_POV == -999)] = NA
+# SVI$E_UNEMP[which(SVI$E_UNEMP == -999)] = NA
 ```
 
 
 # Add necessary populations and housing units
 ```{r}
+# AGE variables use 2010 statistics found here: https://www.census.gov/prod/cen2010/briefs/c2010br-03.pdf
+# Others use national average from provided data set
+
 SVI = SVI %>%
-        mutate(E_AGE25 = ifelse(is.na(round(E_NOHSDP / (EP_NOHSDP/100))), 0, round(E_NOHSDP / (EP_NOHSDP/100))), #Number of people 25+
-               E_AGE16 = ifelse(is.na(round(E_UNEMP / (EP_UNEMP/100))), 0,  round(E_UNEMP / (EP_UNEMP/100))), #Number of people 16+
-               E_AGE5 = ifelse(is.na(round(E_LIMENG / (EP_LIMENG/100))), 0, round(E_LIMENG / (EP_LIMENG/100))), #Number of people 5+
-               E_NOINST = ifelse(is.na(round(E_DISABL / (EP_DISABL/100))), 0, round(E_DISABL / (EP_DISABL/100))), #Number of people not in an institution
-               E_OCCHU = ifelse(is.na(round(E_CROWD / (EP_CROWD/100))), 0, round(E_CROWD / (EP_CROWD/100))))  #Number of occupied housing units
+        mutate(E_AGE25 = ifelse(is.na(round(E_NOHSDP / (EP_NOHSDP/100))), round(0.66 * E_TOTPOP), round(E_NOHSDP / (EP_NOHSDP/100))), #Number of people 25+
+               E_AGE16 = ifelse(is.na(round(E_UNEMP / (EP_UNEMP/100))), round(0.788 * E_TOTPOP),  round(E_UNEMP / (EP_UNEMP/100))), #Number of people 16+
+               E_AGE5 = ifelse(is.na(round(E_LIMENG / (EP_LIMENG/100))), round(0.935 * E_TOTPOP), round(E_LIMENG / (EP_LIMENG/100))), #Number of people 5+
+               E_NOINST = ifelse(is.na(round(E_DISABL / (EP_DISABL/100))), round(0.985 * E_TOTPOP), round(E_DISABL / (EP_DISABL/100))), #Number of people not in an institution
+               E_OCCHU = ifelse(is.na(round(E_CROWD / (EP_CROWD/100))) | EP_CROWD == 0, round(0.709 * E_HU), round(E_CROWD / (EP_CROWD/100))))  #Number of occupied housing units
 ```
 
 
@@ -77,7 +61,7 @@ SVI = SVI %>%
 ```{r}
 SVI_County = SVI %>%
               rowwise() %>% 
-              group_by(YEAR, STCNTY, STATE, COUNTY) %>% 
+              group_by(STCNTY, STATE, COUNTY) %>% 
               summarise(CE_TOTPOP    = sum(E_TOTPOP),
                         CE_AREA_SQMI = sum(AREA_SQMI),
                         CE_HU        = sum(E_HU),
@@ -127,10 +111,6 @@ SVI_County = SVI_County %>%
 ```
 
 ```{r}
-SVI_County
-```
-
-```{r}
 SVI_County = SVI_County %>%
               ungroup() %>% 
               mutate(CEPL_POV    = percent_rank(CEP_POV),
@@ -164,20 +144,7 @@ SVI_County = SVI_County %>%
 SVI_County
 ```
 
-
-
 ```{r}
 filename = "SVI_County.csv"
 write.csv(SVI_County, paste(path,filename,sep=""))
 ```
-
-```{r}
-lookup = SVI_County %>%
-          select(STCNTY,
-                 STATE,
-                 COUNTY)
-filename = "FIPSCountyXWalk.csv"
-write.csv(lookup, paste(path,filename,sep=""))
-```
-
-
