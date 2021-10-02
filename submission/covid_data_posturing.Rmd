@@ -1,0 +1,63 @@
+## Posturing covid deaths, infection and vaccination data for joining with SVI dataset
+
+
+# Load in the required libraries
+
+```{r}
+
+library(tidyverse)
+library(lubridate)
+
+```
+
+# Load in required files
+
+```{r}
+covid_infection = read.csv("../datasets/Social Science/covid_confirmed_usafacts.csv")
+covid_deaths = read.csv("../datasets/Social Science/covid_deaths_usafacts.csv")
+covid_vaccine = read.csv("../datasets/Social Science/COVID-19_Vaccinations_in_the_United_States_County_truncated.csv")
+```
+
+# Create tall dataframes
+
+```{r}
+covid_infection_tall = gather(covid_infection, date, total_infection, colnames(covid_infection)[5]:colnames(covid_infection)[length(colnames(covid_infection))], factor_key=F)
+covid_deaths_tall = gather(covid_deaths, date, deaths, colnames(covid_deaths)[5]:colnames(covid_deaths)[length(colnames(covid_deaths))], factor_key=F)
+covid_vaccine_tall = covid_vaccine
+covid_vaccine_tall$countyFIPS = as.numeric(covid_vaccine_tall$FIPS)
+covid_vaccine_tall$total_vaccines = covid_vaccine$Series_Complete_Yes
+```
+
+# Remove the "X" that appears at the beginning of some dates and convert it into a date object
+
+```{r}
+covid_infection_tall$date = ymd(substring(covid_infection_tall$date, 2))
+covid_deaths_tall$date = ymd(substring(covid_deaths_tall$date, 2))
+covid_vaccine_tall$date = mdy(covid_vaccine_tall$Date)
+```
+
+# Create the final table
+
+```{r}
+new_tall = covid_infection_tall %>%
+            filter(countyFIPS != 0) %>% 
+            left_join(covid_vaccine_tall, by = c("countyFIPS", "date"), suffix = c(".inf", ".vac")) %>% 
+            left_join(covid_deaths_tall, by = c("countyFIPS", "date"), suffix = c(".vac", ".det"))
+
+final = new_tall %>%
+          select(countyFIPS,
+                 date,
+                 total_infection,
+                 total_vaccines,
+                 deaths) %>% 
+          gather(type, value, total_infection:deaths)
+```
+
+# Write the file
+
+```{r}
+write.csv(final, "../datasets/Social Science/COVID_postured.csv")
+```
+
+
+

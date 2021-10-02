@@ -1,0 +1,150 @@
+---
+title: "County Roll-up"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load Libraries
+```{r}
+library(dplyr)
+library(stringr)
+```
+
+# Load Data
+```{r}
+path = "../datasets/Social Science/"
+columns = c("STATE", "COUNTY", "STCNTY", "AREA_SQMI", 'E_TOTPOP', 
+            'E_HU', 'E_HH', 'E_POV', 'E_UNEMP', 'E_PCI', 'E_NOHSDP', 'E_AGE65', 
+            'E_AGE17', 'E_DISABL', 'E_SNGPNT', 'E_MINRTY', 'E_LIMENG', 'E_MUNIT', 
+            'E_MOBILE', 'E_CROWD', 'E_NOVEH', 'E_GROUPQ',
+            'EP_NOHSDP', 'EP_UNEMP', 'EP_LIMENG', 'EP_DISABL', 'EP_CROWD', 'EP_NOVEH')
+
+filename = "xn--CDCs_Social_Vulnerability_Index_(SVI)__2014_overall_SVI,_census_tract_level_-_Wake_County-7470duo.csv"
+SVI_raw = read.csv(paste(path,filename,sep=""))
+SVI = SVI_raw[columns]
+SVI
+```
+
+# Clean Data Prior to Aggregation
+```{r}
+SVI$STATE = str_trim(toupper(SVI$STATE))
+SVI$COUNTY = str_trim(toupper(SVI$COUNTY))
+
+for (colname in colnames(SVI)){
+  SVI[which(SVI[colname] == -999), colname] = NA
+}
+
+# SVI$E_PCI[which(SVI$E_PCI == -999)] = NA
+# SVI$E_POV[which(SVI$E_POV == -999)] = NA
+# SVI$E_UNEMP[which(SVI$E_UNEMP == -999)] = NA
+```
+
+
+# Add necessary populations and housing units
+```{r}
+# AGE variables use 2010 statistics found here: https://www.census.gov/prod/cen2010/briefs/c2010br-03.pdf
+# Others use national average from provided data set
+
+SVI = SVI %>%
+        mutate(E_AGE25 = ifelse(is.na(round(E_NOHSDP / (EP_NOHSDP/100))), round(0.66 * E_TOTPOP), round(E_NOHSDP / (EP_NOHSDP/100))), #Number of people 25+
+               E_AGE16 = ifelse(is.na(round(E_UNEMP / (EP_UNEMP/100))), round(0.788 * E_TOTPOP),  round(E_UNEMP / (EP_UNEMP/100))), #Number of people 16+
+               E_AGE5 = ifelse(is.na(round(E_LIMENG / (EP_LIMENG/100))), round(0.935 * E_TOTPOP), round(E_LIMENG / (EP_LIMENG/100))), #Number of people 5+
+               E_NOINST = ifelse(is.na(round(E_DISABL / (EP_DISABL/100))), round(0.985 * E_TOTPOP), round(E_DISABL / (EP_DISABL/100))), #Number of people not in an institution
+               E_OCCHU = ifelse(is.na(round(E_CROWD / (EP_CROWD/100))) | EP_CROWD == 0, round(0.709 * E_HU), round(E_CROWD / (EP_CROWD/100))))  #Number of occupied housing units
+```
+
+
+# Aggregate to County Level
+```{r}
+SVI_County = SVI %>%
+              rowwise() %>% 
+              group_by(STCNTY, STATE, COUNTY) %>% 
+              summarise(CE_TOTPOP    = sum(E_TOTPOP),
+                        CE_AREA_SQMI = sum(AREA_SQMI),
+                        CE_HU        = sum(E_HU),
+                        CE_HH        = sum(E_HH),
+                        CE_POV       = sum(E_POV),
+                        CE_UNEMP     = sum(E_UNEMP),
+                        CE_PCI       = round(sum(E_PCI * E_TOTPOP, na.rm = TRUE) / sum(E_TOTPOP, na.rm = TRUE)),
+                        CE_NOHSDP    = sum(E_NOHSDP),
+                        CE_MUNIT     = sum(E_MUNIT),
+                        CE_MOBILE    = sum(E_MOBILE),
+                        CE_CROWD     = sum(E_CROWD),
+                        CE_NOVEH     = sum(E_NOVEH),
+                        CE_GROUPQ    = sum(E_GROUPQ),
+                        CE_AGE17     = sum(E_AGE17),
+                        CE_AGE65     = sum(E_AGE65),
+                        CE_DISABL    = sum(E_DISABL),
+                        CE_SNGPNT    = sum(E_SNGPNT),
+                        CE_MINRTY    = sum(E_MINRTY),
+                        CE_LIMENG    = sum(E_LIMENG),
+                        CE_AGE25     = sum(E_AGE25), 
+                        CE_AGE16     = sum(E_AGE16),
+                        CE_AGE5      = sum(E_AGE5),
+                        CE_NOINST    = sum(E_NOINST),
+                        CE_OCCHU     = sum(E_OCCHU)
+              )
+SVI_County
+```
+# Compute SVI
+```{r}
+SVI_County = SVI_County %>% 
+                mutate(CEP_POV    = CE_POV / CE_TOTPOP,
+                       CEP_UNEMP  = CE_UNEMP / CE_AGE16,
+                       CEP_PCI    = CE_PCI,
+                       CEP_NOHSDP = CE_NOHSDP / CE_AGE25,
+                       CEP_MUNIT  = CE_MUNIT / CE_HU,
+                       CEP_MOBLIE = CE_MOBILE / CE_HH, #This is a guess
+                       CEP_CROWD  = ifelse(is.na(CE_CROWD / CE_OCCHU), 0, CE_CROWD / CE_OCCHU),
+                       CEP_NOVEH  = CE_NOVEH / CE_HH, #This is a guess
+                       CEP_GROUPQ = CE_GROUPQ / CE_TOTPOP,
+                       CEP_AGE17  = CE_AGE17 / CE_TOTPOP,
+                       CEP_AGE65  = CE_AGE65 / CE_TOTPOP,
+                       CEP_DISABL = CE_DISABL / CE_NOINST,
+                       CEP_SNGPNT = CE_SNGPNT / CE_HH,
+                       CEP_MINRTY = CE_MINRTY / CE_TOTPOP,
+                       CEP_LIMENG = ifelse(is.na(CE_LIMENG / CE_AGE5), 0, CE_LIMENG / CE_AGE5)
+                )
+```
+
+```{r}
+SVI_County = SVI_County %>%
+              ungroup() %>% 
+              mutate(CEPL_POV    = percent_rank(CEP_POV),
+                     CEPL_UNEMP  = percent_rank(CEP_UNEMP),
+                     CEPL_PCI    = 1-percent_rank(CEP_PCI),
+                     CEPL_NOHSDP = percent_rank(CEP_NOHSDP),
+                     CSPL_THEME1 = percent_rank(CEP_POV) + percent_rank(CEP_UNEMP) + percent_rank(CEP_PCI) + percent_rank(CEP_NOHSDP),
+                     CRPL_THEME1 = percent_rank(percent_rank(CEP_POV) + percent_rank(CEP_UNEMP) + percent_rank(CEP_PCI) + percent_rank(CEP_NOHSDP)),
+                     CEPL_AGE65  = percent_rank(CEP_AGE65),
+                     CEPL_AGE17  = percent_rank(CEP_AGE17),
+                     CEPL_DISABL = percent_rank(CEP_DISABL),
+                     CEPL_SNGPNT = percent_rank(CEP_SNGPNT),
+                     CSPL_THEME2 = percent_rank(CEP_AGE65) + percent_rank(CEP_AGE17) + percent_rank(CEP_DISABL) + percent_rank(CEP_SNGPNT),
+                     CRPL_THEME2 = percent_rank(percent_rank(CEP_AGE65) + percent_rank(CEP_AGE17) + percent_rank(CEP_DISABL) + percent_rank(CEP_SNGPNT)),
+                     CEPL_MINRTY = percent_rank(CEP_MINRTY),
+                     CEPL_LIMENG = percent_rank(CEP_LIMENG),
+                     CSPL_THEME3 = percent_rank(CEP_MINRTY) + percent_rank(CEP_LIMENG),
+                     CRPL_THEME3 = percent_rank(percent_rank(CEP_MINRTY) + percent_rank(CEP_LIMENG)),
+                     CEPL_MUNIT  = percent_rank(CEP_MUNIT),
+                     CEPL_MOBILE = percent_rank(CEP_MOBLIE),
+                     CEPL_CROWD  = percent_rank(CEP_CROWD),
+                     CEPL_NOVEH  = percent_rank(CEP_NOVEH),
+                     CEPL_GROUPQ = percent_rank(CEP_GROUPQ),
+                     CSPL_THEME4 = percent_rank(CEP_MUNIT) + percent_rank(CEP_MOBLIE) + percent_rank(CEP_CROWD) + percent_rank(CEP_NOVEH) + percent_rank(CEP_GROUPQ),
+                     CRPL_THEME4 = percent_rank(percent_rank(CEP_MUNIT) + percent_rank(CEP_MOBLIE) + percent_rank(CEP_CROWD) + percent_rank(CEP_NOVEH) + percent_rank(CEP_GROUPQ)))
+
+SVI_County = SVI_County %>% 
+              mutate(CSPL_THEMES = CRPL_THEME1 + CRPL_THEME2 + CRPL_THEME3 + CRPL_THEME4,
+                     CRPL_THEMES = percent_rank(CRPL_THEME1 + CRPL_THEME2 + CRPL_THEME3 + CRPL_THEME4))
+
+SVI_County
+```
+
+```{r}
+filename = "SVI_County.csv"
+write.csv(SVI_County, paste(path,filename,sep=""))
+```
