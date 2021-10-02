@@ -1,5 +1,11 @@
-## Posturing covid deaths, infection and vaccination data for joining with SVI dataset
+Code summary:
 
+This code postures the historical data for covid infection, covid deaths and covid vaccines on a county level basis. We first begin by create "tidy dataframes" or tall dataframes where each observation is a unique value for deaths vaccines or infections for a given county, state and date. The date data is then cleaned and converted into a date format so that it can be appropriately visualized. 
+
+The deaths, infections and vaccine data is then joined together on county, state and date to provide a concatenated dataframe.
+
+
+## Posturing covid deaths, infection and vaccination data for joining with SVI dataset
 
 # Load in the required libraries
 

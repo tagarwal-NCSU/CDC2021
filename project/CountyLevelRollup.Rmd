@@ -3,6 +3,15 @@ title: "County Roll-up"
 output: html_document
 ---
 
+
+Code summary:
+
+This bit of code recomputes the SVI at a county level by rolling up data at the tract level. We first begin by loading in the datasets and selecting the columns of interest from the SVI dataset. We roll up data appropriately depending on what type of data is provided to us for each individual metric within a given theme. For example, PCI data was recalculated by multiplying PCI by the population of the county census tract, summing this value for all census tracts within a county and redividing by the population to give the correct PCI. Conversely, the number of people without a high school diploma within a certain county was calculated by summing all the values for a given census tract within a county.
+
+Additional adjustments are made to variables such as estimated percentage of people with no high school diploma, estimated number of trailer homes etc. When necessary, estimates collected from a national average if specific values could not be calculated exactly (for example, estimated percentage of people without a high school diploma in a given county rolled up from a census tract level).
+
+Once this county level data has been calculated, the individual metrics within a theme were rank ordered  using percentiles. These percentiles for each metric were summed within a theme and re-rank ordered to give the percentile for that specific SVI theme. The percentiles for the four themes were then summed and re-rank ordered in order to give the final overall SVI score.
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -42,7 +51,6 @@ for (colname in colnames(SVI)){
 # SVI$E_UNEMP[which(SVI$E_UNEMP == -999)] = NA
 ```
 
-
 # Add necessary populations and housing units
 ```{r}
 # AGE variables use 2010 statistics found here: https://www.census.gov/prod/cen2010/briefs/c2010br-03.pdf
@@ -55,7 +63,6 @@ SVI = SVI %>%
                E_NOINST = ifelse(is.na(round(E_DISABL / (EP_DISABL/100))), round(0.985 * E_TOTPOP), round(E_DISABL / (EP_DISABL/100))), #Number of people not in an institution
                E_OCCHU = ifelse(is.na(round(E_CROWD / (EP_CROWD/100))) | EP_CROWD == 0, round(0.709 * E_HU), round(E_CROWD / (EP_CROWD/100))))  #Number of occupied housing units
 ```
-
 
 # Aggregate to County Level
 ```{r}
@@ -89,6 +96,7 @@ SVI_County = SVI %>%
               )
 SVI_County
 ```
+
 # Compute SVI
 ```{r}
 SVI_County = SVI_County %>% 
@@ -110,6 +118,7 @@ SVI_County = SVI_County %>%
                 )
 ```
 
+# Calculate the percent rank for the individual SVI metrics, themes and overall SVI
 ```{r}
 SVI_County = SVI_County %>%
               ungroup() %>% 
@@ -144,6 +153,7 @@ SVI_County = SVI_County %>%
 SVI_County
 ```
 
+# Save final output
 ```{r}
 filename = "SVI_County.csv"
 write.csv(SVI_County, paste(path,filename,sep=""))
