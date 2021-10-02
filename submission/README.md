@@ -1,29 +1,28 @@
-# Submissions
+## Code summary for CountyLevelRollup.Rmd
 
-Submissions will be done through Devpost this year. Please make an account and register as a hackathon participant if you haven't done so already ([Link](https://cdcunc21.devpost.com/)).
+This bit of code recomputes the SVI at a county level by rolling up data at the tract level. 
+We first begin by loading in the datasets and selecting the columns of interest from the SVI dataset. 
+We roll up data appropriately depending on what type of data is provided to us for each individual metric within a given theme. 
+For example, PCI data was recalculated by multiplying PCI by the population of the county census tract, summing this value for all census tracts within a county and redividing by the population to give the correct PCI. 
+Conversely, the number of people without a high school diploma within a certain county was calculated by summing all the values for a given census tract within a county.
 
-## Submission Requirements
+Additional adjustments are made to variables such as estimated percentage of people with no high school diploma, estimated number of trailer homes etc. 
+When necessary, estimates collected from a national average if specific values could not be calculated exactly (for example, estimated percentage of people without a high school diploma in a given county rolled up from a census tract level).
 
-In order to be qualified for a reward, you must submit both of the following:
-1. 5 minute Presentation Video
-2. Github repository link
-Any teams that don't submit either of the 2, will not be in consideration for a prize.
+Once this county level data has been calculated, the individual metrics within a theme were rank ordered  using percentiles. 
+These percentiles for each metric were summed within a theme and re-rank ordered to give the percentile for that specific SVI theme. 
+The percentiles for the four themes were then summed and re-rank ordered in order to give the final overall SVI score.
 
-### Presentation Video
-This video is to be **at most** 5 minutes long (it can be shorter if desired). It can be submitted as a YouTube link (public/unlisted) or on any other streaming platform as long as the video is be publicly accessible through the link.
+## Code summary for covid_data_posturing.Rmd
 
-### Github Repository Link
-We require the Github repository within which you completed your project. The link supplied must be public for the very least the duration of submission, judging, and until the end of the closing ceremony.
+This code postures the historical data for covid infection, covid deaths and covid vaccines on a county level basis. 
+We first begin by create "tidy dataframes" or tall dataframes where each observation is a unique value for deaths vaccines or infections for a given county, state and date. 
+The date data is then cleaned and converted into a date format so that it can be appropriately visualized. 
 
-Devpost itself has a few other submission requirements in order to finish your submission. Please fill those out to the best of your abilities. It will help us and the judges get a better understanding of your project.
+The deaths, infections and vaccine data is then joined together on county, state and date to provide a concatenated dataframe.
 
-## Tracks
-This year we have 4 tracks: Healthcare, Finance, Social Science, and Media. Remember that you may only enter into one track and that track must one of those that you used a corresponding dataset of.
+## Code summary for FederalAidPosturing.Rmd
 
-## Teams
-On the topic of teams. Teams are to be finalized during the Devpost submission process. Only one person needs to submit, but they will need to add the Devpost profiles of the remaining members during submission. Please remember we have a policy of a maximum of 4 people per team.
+Code Summary:
 
-## Resources
-https://devpost.com/software/submission-instructions
-https://help.devpost.com/hc/en-us/articles/360054999651-How-to-enter-a-submission
-https://www.businessinsider.com/how-to-upload-a-video-to-youtube
+This code joins the covid SVI dataframe and federal aid to north carolina data to allow visualization of federal aid provided to north carolina counties grouped by overall SVI and SVI themes.
